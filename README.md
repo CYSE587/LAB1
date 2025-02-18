@@ -1,3 +1,4 @@
+Case 1 - Spoofing
 The scenario implements a very basic spoofer. However, for a realistic implementation, the attack must use gradual spoofing. We provided some references about real spoofing attacks.
 
 The task consists of the following functions:
