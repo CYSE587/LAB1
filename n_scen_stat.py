@@ -61,13 +61,13 @@ def plot_snr_data(results):
     # Box Plot
     plt.figure(figsize=(12, 6))
     snr_data = []
-    scenarios = []
+    scenario_labels = []
     for scenario, data in results.items():
         if 'snr' in data and data['snr']:
             _, snr_values = zip(*data['snr'])
             snr_data.extend(snr_values)
-            scenarios.extend([scenario] * len(snr_values))
-    sns.boxplot(x=scenarios, y=snr_data)
+            scenario_labels.extend([scenario] * len(snr_values))
+    sns.boxplot(x=scenario_labels, y=snr_data)
     plt.xlabel('Scenario')
     plt.ylabel('SNR (dB)')
     plt.title('SNR Distribution across Different Scenarios')
@@ -131,12 +131,53 @@ def plot_packet_loss_data(results, colors=None, output_path='results/packet_loss
     plt.savefig(output_path)
     plt.show()
 
-
+def plot_positions_data(results):
+    plt.figure(figsize=(14, 10))
+    
+    # Plot Latitude
+    plt.subplot(3, 1, 1)
+    for scenario, data in results.items():
+        if 'positions' in data and data['positions']:
+            msgs, lats, lons, alts = zip(*data['positions'])
+            plt.plot(msgs, lats, label=scenario)
+    plt.xlabel('Total Messages Sent')
+    plt.ylabel('Latitude')
+    plt.title('Latitude over Simulation Time')
+    plt.legend()
+    plt.grid(True)
+    
+    # Plot Longitude
+    plt.subplot(3, 1, 2)
+    for scenario, data in results.items():
+        if 'positions' in data and data['positions']:
+            msgs, lats, lons, alts = zip(*data['positions'])
+            plt.plot(msgs, lons, label=scenario)
+    plt.xlabel('Total Messages Sent')
+    plt.ylabel('Longitude')
+    plt.title('Longitude over Simulation Time')
+    plt.legend()
+    plt.grid(True)
+    
+    # Plot Altitude
+    plt.subplot(3, 1, 3)
+    for scenario, data in results.items():
+        if 'positions' in data and data['positions']:
+            msgs, lats, lons, alts = zip(*data['positions'])
+            plt.plot(msgs, alts, label=scenario)
+    plt.xlabel('Total Messages Sent')
+    plt.ylabel('Altitude')
+    plt.title('Altitude over Simulation Time')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig('results/positions_plot.png')
+    plt.show()
 
 # Function to run a simulation scenario
-def run_simulation(jamming=False, spoofing=False, spoof_probability=0.3):
+def run_simulation(jamming=False, spoofing=False, spoof_probability=1):
     channel = ADSBChannel()
-    jammer = Jammer(jamming_probability=0.4, noise_intensity=0.8) if jamming else None
+    jammer = Jammer(jamming_probability=0, noise_intensity=0.8) if jamming else None
     spoofer = Spoofer(spoof_probability=spoof_probability, fake_drone_id="FAKE-DRONE") if spoofing else None
 
     drones = initialize_drones()
@@ -147,6 +188,7 @@ def run_simulation(jamming=False, spoofing=False, spoof_probability=0.3):
     snr_values = []
     latency_values = []
     throughput_values = []
+    positions = []
 
     start_time = time.time()
 
@@ -204,22 +246,25 @@ def run_simulation(jamming=False, spoofing=False, spoof_probability=0.3):
             elapsed_time = receive_time - start_time
             throughput = total_messages / elapsed_time
             throughput_values.append((elapsed_time, throughput))
+            
+            positions.append((total_messages, 
+                              received_message['latitude'], 
+                              received_message['longitude'], 
+                              received_message['altitude']))
+            
+    return packet_loss_over_time, snr_values, latency_values, throughput_values, positions
 
-    return packet_loss_over_time, snr_values, latency_values, throughput_values
-
-
-
-# Run simulations for each scenario and collect results
 # Run simulations for each scenario and collect results
 results = {}
 for scenario, params in scenarios.items():
     print(f"Running scenario: {scenario}")
-    packet_loss_data, snr_data, latency_data, throughput_data = run_simulation(**params)
+    packet_loss_data, snr_data, latency_data, throughput_data, positions = run_simulation(**params)
     results[scenario] = {
         'packet_loss': packet_loss_data,
         'snr': snr_data,
         'latency': latency_data,
-        'throughput': throughput_data
+        'throughput': throughput_data,
+        'positions': positions
     }
 
 # Ensure the 'results' directory exists
@@ -228,12 +273,7 @@ if not os.path.exists('results'):
 
 # Plotting packet loss over time for each scenario
 plot_packet_loss_data(results)
-
-# Plotting SNR over time for each scenario
 plot_snr_data(results)
-
-# Plotting Latency over time for each scenario
 plot_latency_data(results)
-
-# Plotting Throughput over time for each scenario
 plot_throughput_data(results)
+plot_positions_data(results)

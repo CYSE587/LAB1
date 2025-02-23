@@ -65,6 +65,7 @@ class ADSBChannel:
         # Apply spoofing effects if a spoofer is present
         if spoofer:
             spoofed_message, spoofed = spoofer.spoof_message(message)
+            print ('Recieved: ', spoofed_message)
             if spoofed:
                 # Assuming the spoofed message interferes with the legitimate signal
                 spoofing_signal_power_dbm = tx_power_dbm  # Assuming same power for simplicity
